@@ -90,12 +90,20 @@ internal class WalletCoreConfigImpl(
                     }
 
                     configureEtsiTrust {
+                        // Points at the espuni trust lab instead of the EUDIW
+                        // reference infrastructure. These four slots are exactly the
+                        // lists this wallet consumes, and the lab publishes all four.
+                        //
+                        // `wallet-lab` is deliberately absent: a wallet does not
+                        // validate its own provider. That list is consumed by the
+                        // issuer, to check the Wallet Instance Attestation the wallet
+                        // presents, so it has no slot here.
                         loteLocations(
                             SupportedLists(
-                                pidProviders = Uri("https://trustedlist.serviceproviders.eudiw.dev/LOTE/json/PIDProviders.jwt"),
-                                wrpacProviders = Uri("https://trustedlist.serviceproviders.eudiw.dev/LOTE/json/WRPACProviders.jwt"),
-                                wrprcProviders = Uri("https://trustedlist.serviceproviders.eudiw.dev/LOTE/json/WRPRCProviders.jwt"),
-                                pubEaaProviders = Uri("https://trustedlist.serviceproviders.eudiw.dev/LOTE/json/PubEAAProviders.jwt"),
+                                pidProviders = Uri("https://trust-lab.espuni.com/lote/pid-lab.jwt"),
+                                wrpacProviders = Uri("https://trust-lab.espuni.com/lote/wrpac-lab.jwt"),
+                                wrprcProviders = Uri("https://trust-lab.espuni.com/lote/wrprc-lab.jwt"),
+                                pubEaaProviders = Uri("https://trust-lab.espuni.com/lote/pubeaa-lab.jwt"),
                             )
                         )
 
@@ -114,8 +122,23 @@ internal class WalletCoreConfigImpl(
                             )
                         )
 
-                        relaxCertificateProfiles()
+                        // Required, not defensive: no certificate published by the
+                        // four lab lists carries CRLDistributionPoints or an AIA, and
+                        // no lab CA issues a CRL. `PKIXParameters` enables revocation
+                        // checking by default, so without this the chain fails with
+                        // "Could not determine revocation status" before any
+                        // credential can be validated. Drop it the day the lab
+                        // publishes revocation data, not before.
                         relaxPkixRevocation()
+
+                        // Kept pending evidence. The lab mints end-entity certificates
+                        // to two deliberately minimal profiles (mdoc DS with EKU
+                        // 1.0.18013.5.1.2 under a CA; bare leaf for JWS signers) and
+                        // adds no OID a spec does not demand, so this may well be
+                        // unnecessary. Removing it is a tightening that can only be
+                        // confirmed against a real lab-issued credential, which does
+                        // not exist yet.
+                        relaxCertificateProfiles()
                     }
 
                     configureIssuerTrust {
