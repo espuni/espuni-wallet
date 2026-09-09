@@ -107,6 +107,13 @@ internal class WalletCoreConfigImpl(
                             )
                         )
 
+                        // Development cadence, not the production one. The
+                        // defaults are 24h on disk and 20min in memory, which is the
+                        // exact shape of "we changed a list and the app never noticed"
+                        // while the lab is still being wired up.
+                        fileCacheExpiration(15.minutes)
+                        cacheTtl(1.minutes)
+
                         classifications(
                             AttestationClassifications(
                                 pids = AttestationIdentifierPredicate.any(
