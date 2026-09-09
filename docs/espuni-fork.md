@@ -25,7 +25,7 @@ Dos bloques de trabajo, en dos commits separados y sin solaparse:
 | Bloque | Commit | Qué toca |
 |---|---|---|
 | Rebranding a espuni | `564d4e6f` | `resources-logic`, `assembly-logic`, `business-logic`, `ui-logic` |
-| Marco de confianza del laboratorio | `738b771e` | `core-logic`, sólo el flavor `dev` |
+| Marco de confianza del laboratorio | `738b771e`, `4bca1643` | `core-logic`, sólo el flavor `dev` |
 
 Fuente de verdad del primero: `cp-platform/docs/brand-native-criteria.md`, una
 destilación auditable del design system de `apps/portal`. Fuente del segundo:
@@ -39,6 +39,21 @@ destilación auditable del design system de `apps/portal`. Fuente del segundo:
 export ANDROID_HOME="$HOME/Android/Sdk"
 ./gradlew :app:assembleDevDebug :app:assembleDemoDebug
 ```
+
+### APK ligero para instalar en un móvil
+
+El APK de debug pesa **466 MB**, y 341 de ellos son librerías nativas para las
+cuatro ABIs. Un teléfono real sólo usa una. Pidiendo sólo `arm64-v8a` baja a
+**235 MB**, sin tocar ningún fichero del repositorio:
+
+```bash
+./gradlew :app:assembleDevDebug -Pandroid.injected.build.abi=arm64-v8a
+```
+
+> Ese flujo —el que usa el IDE para desplegar— escribe en
+> `app/build/intermediates/apk/<flavor>/debug/`, **no** en `outputs/`. Y
+> cualquier `assemble` posterior sin esa propiedad lo sobrescribe con el
+> universal, así que conviene copiarlo fuera del árbol de build antes de usarlo.
 
 ### Cota de memoria obligatoria en WSL
 
@@ -288,14 +303,15 @@ lo que hace valer el registration certificate.
 `WalletCoreConfig.kt:42` avisa además de que la aplicación debe consultar
 `isRegistrationCheckEnabled` y no el provider, porque wallet-core lee los dos.
 
-### 4.6 Caché de listas — propuesta, sin aplicar
+### 4.6 Caché de listas — aplicado en `dev`
 
 `EtsiTrustConfig` trae `fileCacheExpiration` (24 h, en disco bajo `lote-cache`) y
-`cacheTtl` (20 min, en memoria). Ninguno está puesto, así que rigen los defaults.
+`cacheTtl` (20 min, en memoria). `demo` no los toca y rige ese default.
 
 Es exactamente el modo de fallo «cambiamos una lista y la app no se entera», y
-24 h de caché en disco durante trabajo de laboratorio es mucho. Propuesta para el
-flavor `dev` (`hours`/`minutes` ya están importados, así que no añade imports):
+24 h de caché en disco durante trabajo de laboratorio es mucho. Aplicado en
+`dev` (`demo` conserva los defaults, porque apunta a infraestructura que no
+cambia bajo nuestros pies):
 
 ```kotlin
 fileCacheExpiration(15.minutes)
@@ -357,7 +373,7 @@ adb logcat -c && adb logcat | grep -iE 'EtsiTrust|lote|trust-lab|LoteJwt'
 | `business-logic/.../EspuniRqesTheme.kt` | **Nuevo.** Puente de tema al SDK RQES | §3.5 |
 | `business-logic/{demo,dev}/.../RQESConfigImpl.kt` | `override val themeManager` | §3.5 |
 | `ui-logic/.../EspuniWordmark.kt` | **Nuevo.** Wordmark y línea superior | §3.4 |
-| `core-logic/src/dev/.../WalletCoreConfigImpl.kt` | Cuatro URLs + justificación de los `relax` | §4 |
+| `core-logic/src/dev/.../WalletCoreConfigImpl.kt` | Cuatro URLs, justificación de los `relax`, caché corta | §4 |
 
 **Nada de esto debería ir upstream**: son configuración y marca propias. Con una
 excepción, que sí es un fallo del original y merece issue —
@@ -393,29 +409,28 @@ excepción, que sí es un fallo del original y merece issue —
 
 2. **Reevaluar `relaxCertificateProfiles()`** contra una credencial real del
    laboratorio (§4.4).
-3. **Bajar la caché en `dev`** si se confirma que molesta (§4.6).
-4. **Pinear el firmante de listas** con `jwtSignatureVerifier()` cuando
+3. **Pinear el firmante de listas** con `jwtSignatureVerifier()` cuando
    `LoteJwtVerifier` deje de aceptar el `x5c` a ciegas (§4.3).
-5. **`walletProviderHost`**: el wallet provider del laboratorio aún no está
+4. **`walletProviderHost`**: el wallet provider del laboratorio aún no está
    desplegado. Otra tanda, y no se ha tocado.
-6. **Validar una credencial real** contra el marco, que es lo que cierra el lazo
+5. **Validar una credencial real** contra el marco, que es lo que cierra el lazo
    y desbloquea la verificación en runtime (§5).
 
 ### Rebranding
 
-7. **Contraste (§6.7 del documento de criterios).** Se mantiene paridad byte a
+6. **Contraste (§6.7 del documento de criterios).** Se mantiene paridad byte a
    byte con el web, así que `verify` mide 3.30:1 y `pending` 3.19:1 sobre
    superficie clara. Pasa para los iconos grandes con los que la wallet los usa
    de hecho, pero **no para texto pequeño**, y el Accessibility Scanner lo
    marcará. Opciones: oscurecer sólo para la app, cambiarlos en `tokens.css` para
    ambos, o subir tamaño y peso del texto que los usa.
-8. **Pasada por componentes.** No se ha tocado ningún `Wrap*`: `WrapCard` sigue
+7. **Pasada por componentes.** No se ha tocado ningún `Wrap*`: `WrapCard` sigue
    usando elevación de Material en vez del borde de 1 dp que pide el sistema, y
    los badges siguen sin ser rectángulos de `radius-xs`. Es el trabajo que falta
    para que la app lea «bordes, no sombras».
-9. **Formas del SDK RQES**: su builder no acepta `Shapes`, así que esas pantallas
+8. **Formas del SDK RQES**: su builder no acepta `Shapes`, así que esas pantallas
    conservan sus radios (§3.5).
-10. **Decisiones de §6 sin abordar**: modelo de navegación (6.1), familia de
+9. **Decisiones de §6 sin abordar**: modelo de navegación (6.1), familia de
     iconos (6.2), densidad y áreas táctiles (6.9), movimiento (6.10), fuente
     canónica de cadenas (6.11), estados táctiles y ripple (6.12), superficies que
     el web no tiene —notificaciones, widgets, atajos— (6.13), escalado de fuente
