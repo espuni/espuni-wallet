@@ -172,6 +172,48 @@ escala espuni y **no se han tocado**.
 - **Flavor `dev` distinguible**: fondo oscuro en el icono, para diferenciarlo de
   `demo` en la pantalla de inicio.
 
+### 3.4-bis Logos e ilustraciones
+
+La guía de upstream nombra **dos logos de marca** y avisa de que los originales
+llevan el color incrustado en cada `<path>`, así que no siguen ningún tema:
+
+| Drawable | Dónde sale |
+|---|---|
+| `ic_logo_icon.xml` | splash, vía `AppIcons.LogoIcon` |
+| `ic_logo_icon_and_text.xml` | cabecera de contenido, vía `AppIcons.LogoIconAndText` |
+
+Los dos son ahora la marca y el wordmark de espuni, con los contornos **reales de
+Geist** extraídos de la fuente empaquetada y colocados por sus propios anchos de
+avance, con el tracking de `-0.02em` y el cuadrado de `0.4em` a `0.06em` sobre la
+línea base. Es el wordmark, no una foto del wordmark.
+
+Sus colores van **por referencia** (`@color/espuni_mark`, `@color/espuni_verify`),
+así que las letras siguen el tema y sólo el cuadrado conserva color propio. Ambos
+mantienen el viewport del logo al que sustituyen: ninguno de los dos call sites
+pasa modificador de tamaño, así que **el tamaño intrínseco es el layout**.
+
+**Y un defecto que la guía no menciona.** Las quince ilustraciones que se dibujan
+con `WrapImage` no llevan tinte, así que su azul EU llegaba a pantalla tal cual —
+y al no existir `drawable-night`, se pintaba una ilustración de modo claro sobre
+el fondo casi negro del tema oscuro. Su paleta se mapea ahora a tokens espuni
+mediante colores con nombre que tienen las dos variantes:
+
+| Original | Papel | espuni claro / oscuro |
+|---|---|---|
+| `#2A5FD9` `#2a5ed9` `#2B5EDA` `#2E293B` | trazo | `--text` |
+| `#CAE6FD` `#CCE8FF` `#C8E4FD` `#ECECEC` | relleno decorativo | `--surface-2` |
+| `#55953B` | verificado | `--verify` |
+| `#B3261E` `#F67875` | fallo | `--alert` |
+| `#F39626` | en vuelo | `--pending` |
+
+Los rellenos decorativos colapsan a neutros, que es lo que pide el sistema: el
+color se reserva para el significado.
+
+> **Lo que se deja a propósito:** los ~25 iconos de un solo color que aún nombran
+> el azul de la UE. `WrapIcon` los tiñe desde `LocalContentColor`, y en Compose el
+> tinte de un `Icon` **sustituye** los colores del vector, así que ese valor no
+> llega nunca a un píxel. Cambiarlos sería ruido en el diff sin efecto visual.
+
 ### 3.5 Sub-SDK RQES — `business-logic/.../EspuniRqesTheme.kt`
 
 El SDK de firma remota (`eudi-lib-android-rqes-ui`) **empaqueta su propia copia
@@ -371,6 +413,8 @@ adb logcat -c && adb logcat | grep -iE 'EtsiTrust|lote|trust-lab|LoteJwt'
 | `resources-logic/.../EspuniTokens.kt` | **Nuevo.** Publica la paleta para el SDK RQES | §3.5 |
 | `resources-logic/res/font/geist_*.ttf` | **Nuevos** (7). Roboto borrado | §3.2 |
 | `resources-logic/res/drawable/ic_espuni_*.xml` | **Nuevos** (3) | §3.4 |
+| `resources-logic/res/drawable/ic_logo_icon*.xml` | Marca y wordmark espuni, temables | §3.4-bis |
+| `resources-logic/res/drawable/` (20 ilustraciones e iconos) | Paleta por referencia, con variante noche | §3.4-bis |
 | `resources-logic/res/mipmap-*/ic_launcher*.webp` | **Borrados** (33) | Muertos con `minSdk 29` |
 | `resources-logic/res/values{,-night}/colors.xml`, `themes.xml` | Splash y tema día/noche | §3.4 |
 | `assembly-logic/build.gradle.kts` | `appName` → `espuni` | §3.4 |
