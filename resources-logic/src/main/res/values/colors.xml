@@ -16,5 +16,8 @@
   -->
 
 <resources>
-
+    <!-- Day values of the two tokens the splash window needs before Compose exists.
+         the page background and primary text of `apps/portal/app/tokens.css`. -->
+    <color name="espuni_splash_background">#F5F6F8</color>
+    <color name="espuni_mark">#111827</color>
 </resources>

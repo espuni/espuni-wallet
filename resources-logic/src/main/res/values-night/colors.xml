@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <!--
   ~ Copyright (c) 2026 European Commission
   ~
@@ -15,9 +16,6 @@
   -->
 
 <resources>
-    <!-- Base theme. -->
-    <style name="Theme.Base" parent="Theme.MaterialComponents.DayNight.DarkActionBar" />
-
-    <!-- Application theme. -->
-    <style name="Theme.Espuni" parent="Theme.Base" />
+    <color name="espuni_splash_background">#0A0A0A</color>
+    <color name="espuni_mark">#EDEDEC</color>
 </resources>

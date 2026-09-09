@@ -66,7 +66,7 @@
         android:networkSecurityConfig="@xml/network_security_config"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.EUDIWallet"
+        android:theme="@style/Theme.Espuni"
         tools:targetApi="34">
 
         <provider
@@ -100,7 +100,7 @@
             android:exported="true"
             android:launchMode="singleTask"
             android:screenOrientation="portrait"
-            android:theme="@style/Theme.EUDIWallet"
+            android:theme="@style/Theme.Espuni"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

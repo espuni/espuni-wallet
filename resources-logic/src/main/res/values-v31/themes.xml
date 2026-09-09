@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <!--
   ~ Copyright (c) 2026 European Commission
   ~
@@ -16,8 +17,9 @@
 
 <resources>
     <!-- Application theme. -->
-    <style name="Theme.EUDIWallet" parent="Theme.Base">
-        <item name="android:windowSplashScreenAnimatedIcon">@android:color/transparent</item>
+    <style name="Theme.Espuni" parent="Theme.Base">
+        <item name="android:windowSplashScreenBackground">@color/espuni_splash_background</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_espuni_splash</item>
         <item name="android:windowSplashScreenAnimationDuration">0</item>
     </style>
 </resources>

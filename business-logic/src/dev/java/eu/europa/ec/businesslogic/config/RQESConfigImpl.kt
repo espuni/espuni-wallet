@@ -23,6 +23,7 @@ import eu.europa.ec.eudi.rqesui.domain.extension.toUriOrEmpty
 import eu.europa.ec.eudi.rqesui.infrastructure.config.DocumentRetrievalConfig
 import eu.europa.ec.eudi.rqesui.infrastructure.config.EudiRQESUiConfig
 import eu.europa.ec.eudi.rqesui.infrastructure.config.data.QtspData
+import eu.europa.ec.eudi.rqesui.infrastructure.theme.ThemeManager
 import eu.europa.ec.resourceslogic.R
 import java.net.URI
 
@@ -42,6 +43,10 @@ class RQESConfigImpl(val context: Context) : EudiRQESUiConfig {
         )
 
     override val printLogs: Boolean get() = BuildConfig.DEBUG
+
+    // The signing screens live inside the SDK and would otherwise render in its own
+    // palette and Roboto faces, halfway through a wallet journey.
+    override val themeManager: ThemeManager get() = espuniRqesThemeManager()
 
     override val documentRetrievalConfig: DocumentRetrievalConfig
         get() = DocumentRetrievalConfig.X509Certificates(
