@@ -18,4 +18,16 @@
 <resources>
     <color name="espuni_splash_background">#0A0A0A</color>
     <color name="espuni_mark">#EDEDEC</color>
+    <color name="espuni_verify">#4ADE80</color>
+
+    <!-- Illustration palette, dark. -->
+    <color name="espuni_illus_ink">#EDEDEC</color>
+    <color name="espuni_illus_fill">#1A1A1A</color>
+    <color name="espuni_illus_surface">#111111</color>
+    <color name="espuni_illus_verify">#4ADE80</color>
+    <color name="espuni_illus_alert">#F87171</color>
+    <color name="espuni_illus_outline">#2A2A2A</color>
+    <color name="espuni_illus_pending">#FBBF24</color>
+    <color name="espuni_illus_verify_fill">#16261B</color>
+    <color name="espuni_illus_pending_fill">#2B2416</color>
 </resources>

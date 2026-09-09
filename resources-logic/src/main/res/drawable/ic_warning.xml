@@ -20,6 +20,6 @@
     android:viewportWidth="24"
     android:viewportHeight="24">
     <path
-        android:fillColor="#F39626"
+        android:fillColor="@color/espuni_illus_pending"
         android:pathData="M1,21.5H23L12,2.5L1,21.5ZM13,18.5H11V16.5H13V18.5ZM13,14.5H11V10.5H13V14.5Z" />
 </vector>

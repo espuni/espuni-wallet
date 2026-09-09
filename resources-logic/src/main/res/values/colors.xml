@@ -20,4 +20,18 @@
          the page background and primary text of `apps/portal/app/tokens.css`. -->
     <color name="espuni_splash_background">#F5F6F8</color>
     <color name="espuni_mark">#111827</color>
+    <color name="espuni_verify">#16A34A</color>
+
+    <!-- Illustration palette. The reference illustrations bake the EU blue into
+         every path and have no night variant, so they render unchanged on the dark
+         background. These map them onto espuni tokens and give them both themes. -->
+    <color name="espuni_illus_ink">#111827</color>
+    <color name="espuni_illus_fill">#F0F1F3</color>
+    <color name="espuni_illus_surface">#FFFFFF</color>
+    <color name="espuni_illus_verify">#16A34A</color>
+    <color name="espuni_illus_alert">#DC2626</color>
+    <color name="espuni_illus_outline">#D8DCE2</color>
+    <color name="espuni_illus_pending">#D97706</color>
+    <color name="espuni_illus_verify_fill">#E2F2E7</color>
+    <color name="espuni_illus_pending_fill">#FDEFD6</color>
 </resources>
