@@ -24,8 +24,13 @@ Dos bloques de trabajo, en dos commits separados y sin solaparse:
 
 | Bloque | Commit | Qué toca |
 |---|---|---|
-| Rebranding a espuni | `564d4e6f` | `resources-logic`, `assembly-logic`, `business-logic`, `ui-logic` |
-| Marco de confianza del laboratorio | `738b771e`, `4bca1643` | `core-logic`, sólo el flavor `dev` |
+| Rebranding a espuni | *Rebrand the reference wallet as espuni* | `resources-logic`, `assembly-logic`, `business-logic`, `ui-logic` |
+| Marco de confianza del laboratorio | *Point the dev flavour's ETSI trust at the espuni trust lab* · *Shorten the dev flavour's trust list cache* | `core-logic`, sólo el flavor `dev` |
+
+> Los commits se citan por asunto y no por hash a propósito: esta rama se rebasa
+> sobre `upstream/main` cada vez que hay que integrar cambios del original, y en
+> cada rebase los hashes cambian. `git log upstream/main..espuni/main` da la
+> lista viva en cualquier momento.
 
 Fuente de verdad del primero: `cp-platform/docs/brand-native-criteria.md`, una
 destilación auditable del design system de `apps/portal`. Fuente del segundo:
