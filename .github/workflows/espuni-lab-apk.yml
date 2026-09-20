@@ -76,7 +76,12 @@ jobs:
             ${REQUIRE_SIGNED_METADATA:+-PLAB_REQUIRE_SIGNED_METADATA=$REQUIRE_SIGNED_METADATA} \
             ${ABI:+-Pandroid.injected.build.abi=$ABI}
           mkdir -p apk
-          find app/build -name "*.apk" -path "*dev*debug*" -exec cp {} apk/ \;
+          # El nombre lleva la build dentro. Todas las compilaciones producian
+          # `app-dev-debug.apk`, asi que en la carpeta de descargas del movil
+          # quedaban varias indistinguibles —`app-dev-debug (1).apk`…— y es
+          # trivial instalar la vieja creyendo que es la nueva.
+          NOMBRE="espuni-wallet-r${GITHUB_RUN_NUMBER}-${GITHUB_SHA::7}-signedmeta${REQUIRE_SIGNED_METADATA:-true}.apk"
+          find app/build -name "*.apk" -path "*dev*debug*" -exec cp {} "apk/$NOMBRE" \;
           ls -lh apk/
 
       - name: A dónde apunta este APK, y con qué clave va firmado
@@ -89,6 +94,6 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: espuni-wallet-dev-debug
+          name: espuni-wallet-r${{ github.run_number }}
           path: apk/*.apk
           if-no-files-found: error
