@@ -18,9 +18,9 @@ on:
         required: false
         default: https://wallet-provider-staging.up.railway.app
       abi:
-        description: ABI única (arm64-v8a deja el APK en 235 MB; vacío = universal)
+        description: ABI única (arm64-v8a baja el tamaño; vacío = universal, instala en cualquier móvil)
         required: false
-        default: arm64-v8a
+        default: ''
   push:
     branches: [espuni/lab]
 
@@ -60,7 +60,7 @@ jobs:
         env:
           PUBLISHER: ${{ inputs.publisher || 'https://trust-lab-publisher-staging.up.railway.app' }}
           WALLET_PROVIDER: ${{ inputs.walletProvider || 'https://wallet-provider-staging.up.railway.app' }}
-          ABI: ${{ inputs.abi || 'arm64-v8a' }}
+          ABI: ${{ inputs.abi }}
         run: |
           # Con una sola ABI el APK no va a outputs/, sino a intermediates/:
           # es el mismo flujo que usa el IDE para desplegar (ver docs/espuni-fork.md).
