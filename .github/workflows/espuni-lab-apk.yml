@@ -22,10 +22,10 @@ on:
         required: false
         default: ''
       requireSignedMetadata:
-        description: Exigir los metadatos firmados del emisor (su x5c tiene que encadenar con wrpac-lab)
+        description: Exigir los metadatos firmados del emisor (por defecto sí; a false solo para alcanzar emisores que no los firmen)
         required: false
         type: boolean
-        default: false
+        default: true
   push:
     branches: [espuni/lab]
 
@@ -66,14 +66,14 @@ jobs:
           PUBLISHER: ${{ inputs.publisher || 'https://trust-lab-publisher-staging.up.railway.app' }}
           WALLET_PROVIDER: ${{ inputs.walletProvider || 'https://wallet-provider-staging.up.railway.app' }}
           ABI: ${{ inputs.abi }}
-          REQUIRE_SIGNED_METADATA: ${{ inputs.requireSignedMetadata && 'true' || 'false' }}
+          REQUIRE_SIGNED_METADATA: ${{ github.event_name == 'workflow_dispatch' && (inputs.requireSignedMetadata && 'true' || 'false') || '' }}
         run: |
           # Con una sola ABI el APK no va a outputs/, sino a intermediates/:
           # es el mismo flujo que usa el IDE para desplegar (ver docs/espuni-fork.md).
           ./gradlew :app:assembleDevDebug --no-daemon --stacktrace \
             -PLAB_PUBLISHER="$PUBLISHER" \
             -PLAB_WALLET_PROVIDER_HOST="$WALLET_PROVIDER" \
-            -PLAB_REQUIRE_SIGNED_METADATA="$REQUIRE_SIGNED_METADATA" \
+            ${REQUIRE_SIGNED_METADATA:+-PLAB_REQUIRE_SIGNED_METADATA=$REQUIRE_SIGNED_METADATA} \
             ${ABI:+-Pandroid.injected.build.abi=$ABI}
           mkdir -p apk
           find app/build -name "*.apk" -path "*dev*debug*" -exec cp {} apk/ \;

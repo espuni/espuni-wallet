@@ -288,7 +288,7 @@ a la infraestructura de referencia de `eudiw.dev`.
 | Slot de `SupportedLists` | Lista | Qué deja validar |
 |---|---|---|
 | `pidProviders` | `pid-lab.jwt` | el emisor del PID recibido |
-| `wrpacProviders` | `wrpac-lab.jwt` | el access certificate del verificador |
+| `wrpacProviders` | `wrpac-lab.jwt` | el access certificate: el del verificador en una petición, y el que firma los metadatos del emisor |
 | `wrprcProviders` | `wrprc-lab.jwt` | el registration certificate de la petición |
 | `pubEaaProviders` | `pubeaa-lab.jwt` | el emisor de una atestación de organismo público |
 
@@ -311,6 +311,7 @@ con otros parámetros:
 | `LAB_PUBLISHER` | `https://trust-lab-publisher-staging.up.railway.app` |
 | `LAB_PID_TRUST_LIST` · `LAB_WRPAC_TRUST_LIST` · `LAB_WRPRC_TRUST_LIST` · `LAB_PUBEAA_TRUST_LIST` | `$LAB_PUBLISHER/lote/<lista>.jwt` |
 | `LAB_WALLET_PROVIDER_HOST` | `https://wallet-provider-staging.up.railway.app` |
+| `LAB_REQUIRE_SIGNED_METADATA` | `true` (ver §4.1-ter) |
 
 > **Por qué el publisher de staging y no `trust-lab.espuni.com`.** Ese dominio
 > no resuelve: no tiene registro DNS. Las listas de staging se sirven en el
@@ -336,18 +337,17 @@ En staging es el servicio `wallet-provider` del proyecto trust-lab, que firma
 con el `wia-signer` del laboratorio y pide a la consola la posición de status
 list de cada WIA.
 
-### 4.1-ter Metadatos firmados del emisor: preferidos, no exigidos
+### 4.1-ter Metadatos firmados del emisor: exigidos
 
 La variante `dev` de upstream llama a `requireSignedMetadata()` con política
-`ENFORCE`, y con ella la emisión queda **bloqueada antes de empezar**:
-*«Issuance blocked — the provider could not be verified by your wallet»*.
+`ENFORCE`, y **así se queda**. El flag `LAB_REQUIRE_SIGNED_METADATA` existe
+para poder bajarlo a `preferSignedMetadata()` en una compilación suelta, pero
+su valor por defecto es `true`.
 
 **Qué pide la wallet.** `DefaultCredentialIssuerMetadataResolver` de
-`eudi-lib-jvm-openid4vci-kt` 0.13.1 pide el `.well-known` con
-`accept: application/jwt` y espera una respuesta con ese mismo `Content-Type`:
-un JWT `openidvci-issuer-metadata+jwt` con la metadata en el payload. Si vuelve
-JSON, es `MissingSignedMetadata`; si el JWT no valida,
-`InvalidSignedMetadata`.
+`eudi-lib-jvm-openid4vci-kt` 0.13.1 pide el `.well-known` con un `Accept` y
+espera la respuesta con ese mismo `Content-Type`: un JWT
+`openidvci-issuer-metadata+jwt` con la metadata en el payload.
 
 **Con qué certificado se firma.** Con el **access certificate** del emisor, no
 con su Document Signer: `wallet-core` valida esa firma con
@@ -356,28 +356,27 @@ con su Document Signer: `wallet-core` valida esa firma con
 resuelve ese contexto contra el caso de uso **WRPAC**, es decir la lista
 `wrpac-lab`. `pid-lab` cubre otra cosa: el firmante de la credencial.
 
-**EUDIPLO ya lo hace.** `WellKnownService.getIssuerMetadata()` negocia por
-`Accept` y firma el JWT con `certService.find({ type: KeyUsageType.Access })`,
-poniendo su cadena en `x5c`. Es exactamente lo que pide la wallet; no falta
-nada en EUDIPLO.
+**Por qué no basta con preferirlos.** Con `preferSignedMetadata()` la wallet
+manda `Accept: application/jwt, application/json`; con `require`, solo
+`application/jwt`. EUDIPLO compara esa cabecera con `===` contra
+`"application/jwt"`, así que **sólo firma cuando se le pide un único tipo**: al
+preferirlos, la wallet recibe JSON sin firmar y nunca ve la firma
+(→ [eudiaas/eudiplo#29](https://github.com/eudiaas/eudiplo/issues/29)).
 
-Lo que falla es **cuál** de los certificados de acceso coge. `findByUsageType`
-hace un `findOne({ tenantId, usageType: 'access' })` **sin orden ni criterio**,
-y el tenant tiene más de uno: el que EUDIPLO se autogeneró al arrancar
-(`C=DE, CN=espuni`, bajo su propia `espuni Root CA`) y el que importa el
-laboratorio desde un WRPAC. En staging coge el autogenerado, que no encadena
-con `wrpac-lab`, así que la firma no la avala nadie.
+**Y sin firma, el certificado de registro no sirve.** No es sólo que se pierda
+la autenticación del emisor. En `IssuerRegistrationResolver.resolve()`,
+`wallet-core` coge `getMetadataSigningCertificate()` y se lo pasa a
+`isBoundTo()`, que compara el `organizationIdentifier` (OID 2.5.4.97) del
+certificado de acceso con el `sub` del certificado de registro. Sin certificado
+de acceso no hay vinculación posible: `NOT_BOUND_TO_REQUESTER`, y la emisión se
+rechaza. El certificado de acceso es lo que hace utilizable al de registro.
 
-De ahí que de momento se **prefieran** (`preferSignedMetadata()`). Ojo con lo
-que eso significa: «preferir» sólo tolera la **ausencia**. Si el emisor
-responde `application/jwt` —y EUDIPLO responde—, `requestPreferringSigned`
-llama igualmente a `parseAndVerifySignedMetadata` y **propaga el fallo**; no
-hay vuelta atrás a los metadatos sin firmar. La diferencia con `require` es
-sólo qué pasa cuando el emisor no los firma en absoluto.
-
-Se vuelve a exigir con `-PLAB_REQUIRE_SIGNED_METADATA=true`, cuando el único
-certificado de acceso del tenant —o el que EUDIPLO acabe eligiendo— sea uno
-emitido bajo `wrpac-ca` y publicado en `wrpac-lab`.
+**Requisito del lado del laboratorio.** El tenant debe tener **un solo**
+certificado de acceso, emitido bajo `wrpac-ca` y publicado en `wrpac-lab`:
+`findByUsageType` de EUDIPLO resuelve con un `findOne({ tenantId, usageType })`
+sin orden, y no hay forma de fijar cuál firma los metadatos. Una entidad usa un
+único certificado de acceso —lo que varía por servicio es el certificado de
+registro—, así que con uno solo deja de ser ambiguo.
 
 ### 4.2 Por qué sólo el flavor `dev`
 
@@ -391,13 +390,13 @@ sólo difieren en `issuersConfig`. Se toca `dev` porque:
 3. Las listas del laboratorio se declaran a sí mismas `(TEST)` en su
    `SchemeName`.
 
-> ⚠ **Consecuencia conocida.** `issuersConfig` de `dev` sigue apuntando a
+> **Consecuencia, y es la buscada.** `issuersConfig` de `dev` sigue apuntando a
 > emisores de `eudiw.dev`, cuyos Document Signers encadenan con la lista de
 > `eudiw.dev`, no con `pid-lab`. Con `TrustPolicy.Action.ENFORCE` y
 > `requireSignedMetadata()`, **la emisión desde esos emisores queda rechazada**.
-> `dev` es, en el intervalo, una wallet que sólo confía en el laboratorio y sólo
-> alcanza emisores que el laboratorio no avala. Se resuelve cuando EUDIPLO emita
-> un PID de laboratorio.
+> No es un intervalo que haya que cerrar: esta wallet es la del laboratorio y
+> sólo tiene que alcanzar a sus emisores. Si alguna vez hace falta llegar a uno
+> externo, se compila suelta con `-PLAB_REQUIRE_SIGNED_METADATA=false`.
 
 ### 4.3 Firma de las listas: no se pinea a nadie
 

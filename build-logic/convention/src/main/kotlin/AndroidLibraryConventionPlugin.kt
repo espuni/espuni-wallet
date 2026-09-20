@@ -92,24 +92,32 @@ class AndroidLibraryConventionPlugin : Plugin<Project> {
                 "LAB_WALLET_PROVIDER_HOST",
                 "https://wallet-provider-staging.up.railway.app"
             )
-            // EUDIPLO no firma sus metadatos de emisor: no hay una sola
-            // referencia a `signed_metadata` en su backend. Con
-            // requireSignedMetadata(), wallet-core devuelve
-            // MissingSignedMetadata, la app lo traduce a "emisor no verificado"
-            // y bloquea la emision antes de empezar.
+            // Metadatos del emisor firmados: EXIGIDOS. No es celo, es lo unico
+            // que funciona contra EUDIPLO.
             //
-            // Cuando los firme, tiene que hacerlo con su ACCESS CERTIFICATE:
-            // wallet-core valida esa firma con EtsiCertificateChainTrust en el
-            // contexto WalletRelyingPartyAccessCertificate, que la libreria
-            // ETSI resuelve contra la lista WRPAC (wrpac-lab). No contra
-            // pid-lab, que es la que cubre al Document Signer de la credencial.
+            // Los firma con su ACCESS CERTIFICATE, y wallet-core valida esa
+            // firma con EtsiCertificateChainTrust en el contexto
+            // WalletRelyingPartyAccessCertificate, que la libreria ETSI
+            // resuelve contra la lista WRPAC (wrpac-lab) — no contra pid-lab,
+            // que cubre al Document Signer de la credencial.
             //
-            // Hasta entonces se PREFIEREN: si llegan, se validan; si no, la
-            // confianza en el emisor sale del registration certificate que
-            // publica y de la cadena del PID, que la wallet comprueba al
-            // recibir la credencial.
+            // Y ese certificado no es un extra: IssuerRegistrationResolver se
+            // lo pasa a isBoundTo() para comprobar que el organizationIdentifier
+            // (2.5.4.97) del certificado de acceso coincide con el `sub` del
+            // certificado de registro. Sin el, el registration certificate no
+            // se puede vincular y la emision se rechaza.
+            //
+            // Con preferSignedMetadata() la wallet pide
+            // `Accept: application/jwt, application/json`, y EUDIPLO compara
+            // esa cabecera con `===` contra "application/jwt": responde sin
+            // firmar. Solo con requireSignedMetadata() pide un unico tipo y
+            // recibe la firma (ver eudiaas/eudiplo#29).
+            //
+            // La contrapartida es que los emisores que no firmen sus metadatos
+            // quedan rechazados. Es lo buscado: esta wallet es la del
+            // laboratorio y solo tiene que alcanzar a sus emisores.
             val labRequireSignedMetadata =
-                lab("LAB_REQUIRE_SIGNED_METADATA", "false").toBoolean()
+                lab("LAB_REQUIRE_SIGNED_METADATA", "true").toBoolean()
 
             with(pluginManager) {
                 apply("com.android.library")
