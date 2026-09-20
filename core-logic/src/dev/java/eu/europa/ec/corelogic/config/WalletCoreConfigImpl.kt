@@ -16,6 +16,7 @@
 
 package eu.europa.ec.corelogic.config
 
+import android.util.Log
 import eu.europa.ec.corelogic.BuildConfig
 import eu.europa.ec.corelogic.model.DocumentIdentifier
 import eu.europa.ec.corelogic.provider.RegistrationCheckProvider
@@ -46,6 +47,8 @@ internal class WalletCoreConfigImpl(
     private val registrationCheckProvider: RegistrationCheckProvider,
 ) : WalletCoreConfig {
 
+    private val labTag = "EUDI Wallet DEV-DEBUG"
+
     private var _config: EudiWalletConfig? = null
 
     override val isRegistrationCheckEnabled: Boolean by lazy {
@@ -55,6 +58,16 @@ internal class WalletCoreConfigImpl(
     override val config: EudiWalletConfig
         get() {
             if (_config == null) {
+                // A que laboratorio apunta esta build, y con que politicas. Sin
+                // esto, distinguir una build de otra en un movil obliga a
+                // deducirlo de la cabecera Accept que manda al .well-known:
+                // dos tipos son preferSignedMetadata, uno solo es require.
+                Log.d(
+                    labTag,
+                    "lab build: publisher=${BuildConfig.LAB_PID_TRUST_LIST.substringBefore("/lote/")}" +
+                        " walletProvider=${BuildConfig.LAB_WALLET_PROVIDER_HOST}" +
+                        " requireSignedMetadata=${BuildConfig.LAB_REQUIRE_SIGNED_METADATA}"
+                )
                 _config = EudiWalletConfig {
                     configureDocumentKeyCreation(
                         userAuthenticationRequired = false,
