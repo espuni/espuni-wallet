@@ -73,6 +73,7 @@ jobs:
           ./gradlew :app:assembleDevDebug --no-daemon --stacktrace \
             -PLAB_PUBLISHER="$PUBLISHER" \
             -PLAB_WALLET_PROVIDER_HOST="$WALLET_PROVIDER" \
+            -PLAB_BUILD="r${GITHUB_RUN_NUMBER}-${GITHUB_SHA::7}" \
             ${REQUIRE_SIGNED_METADATA:+-PLAB_REQUIRE_SIGNED_METADATA=$REQUIRE_SIGNED_METADATA} \
             ${ABI:+-Pandroid.injected.build.abi=$ABI}
           mkdir -p apk
@@ -89,6 +90,10 @@ jobs:
           find . -name "BuildConfig.java" -path "*corelogic*" -exec grep -h "LAB_" {} \; | sort -u
           # La huella del firmante: si cambia entre dos APK, el segundo no se
           # instala encima del primero.
+          # La version que se vera en el movil, para poder compararla con la
+          # que se cree haber instalado.
+          AAPT=$(ls "$ANDROID_HOME"/build-tools/*/aapt2 | tail -1)
+          "$AAPT" dump badging apk/*.apk 2>/dev/null | grep -E "^package:" || true
           APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | tail -1)
           "$APKSIGNER" verify --print-certs apk/*.apk | grep -E "SHA-256 digest|Verified using"
 

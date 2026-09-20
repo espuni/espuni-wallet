@@ -43,6 +43,13 @@ android {
         applicationId = "eu.europa.ec.euidi"
         versionCode = 1
 
+        // Que build es esta, visible en Ajustes -> Aplicaciones sin log ni
+        // herramientas. Todas las compilaciones del laboratorio se parecian, y
+        // distinguir la instalada de la descargada costaba mas que el problema
+        // que se estaba depurando. LAB_BUILD lo pone la CI.
+        val labBuild = (findProperty("LAB_BUILD") as? String)?.takeIf { it.isNotBlank() }
+        if (labBuild != null) versionNameSuffix = "-$labBuild"
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
