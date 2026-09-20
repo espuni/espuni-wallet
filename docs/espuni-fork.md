@@ -339,27 +339,43 @@ list de cada WIA.
 ### 4.1-ter Metadatos firmados del emisor: preferidos, no exigidos
 
 La variante `dev` de upstream llama a `requireSignedMetadata()` con política
-`ENFORCE`. **EUDIPLO no firma sus metadatos**: no hay una sola referencia a
-`signed_metadata` en su backend (comprobado en el submódulo, v7.2.0, y en
-`upstream/main` v8.0.1). Con el requisito activo, `wallet-core` devuelve
-`CredentialIssuerMetadataError.MissingSignedMetadata`, la app lo traduce a
-«emisor no verificado» y **bloquea la emisión antes de empezar**: *«Issuance
-blocked — the provider could not be verified by your wallet»*.
+`ENFORCE`, y con ella la emisión queda **bloqueada antes de empezar**:
+*«Issuance blocked — the provider could not be verified by your wallet»*.
 
-**Con qué certificado se firman.** Con el **access certificate** del emisor, no
+**Qué pide la wallet.** `DefaultCredentialIssuerMetadataResolver` de
+`eudi-lib-jvm-openid4vci-kt` 0.13.1 pide el `.well-known` con
+`accept: application/jwt` y espera una respuesta con ese mismo `Content-Type`:
+un JWT `openidvci-issuer-metadata+jwt` con la metadata en el payload. Si vuelve
+JSON, es `MissingSignedMetadata`; si el JWT no valida,
+`InvalidSignedMetadata`.
+
+**Con qué certificado se firma.** Con el **access certificate** del emisor, no
 con su Document Signer: `wallet-core` valida esa firma con
 `EtsiCertificateChainTrust` pasando el contexto
 `VerificationContext.WalletRelyingPartyAccessCertificate`, y la librería ETSI
 resuelve ese contexto contra el caso de uso **WRPAC**, es decir la lista
 `wrpac-lab`. `pid-lab` cubre otra cosa: el firmante de la credencial.
 
-Mientras el emisor no los firme se **prefieren** (`preferSignedMetadata()`): si
-algún día llegan, se validan; si no llegan, la confianza en el emisor sale del
-registration certificate que publica en `issuer_info` y de la cadena del PID,
-que la wallet comprueba al recibir la credencial.
+**EUDIPLO ya lo hace.** `WellKnownService.getIssuerMetadata()` negocia por
+`Accept` y firma el JWT con `certService.find({ type: KeyUsageType.Access })`,
+poniendo su cadena en `x5c`. Es exactamente lo que pide la wallet; no falta
+nada en EUDIPLO.
 
-Se vuelve a exigir con `-PLAB_REQUIRE_SIGNED_METADATA=true`, el día que EUDIPLO
-firme sus metadatos con un certificado que encadene a `wrpac-lab`.
+Lo que falla es **cuál** de los certificados de acceso coge. `findByUsageType`
+hace un `findOne({ tenantId, usageType: 'access' })` **sin orden ni criterio**,
+y el tenant tiene más de uno: el que EUDIPLO se autogeneró al arrancar
+(`C=DE, CN=espuni`, bajo su propia `espuni Root CA`) y el que importa el
+laboratorio desde un WRPAC. En staging coge el autogenerado, que no encadena
+con `wrpac-lab`, así que la firma no la avala nadie.
+
+De ahí que de momento se **prefieran** (`preferSignedMetadata()`): la
+confianza en el emisor sale del registration certificate que publica en
+`issuer_info` y de la cadena del PID, que la wallet comprueba al recibir la
+credencial.
+
+Se vuelve a exigir con `-PLAB_REQUIRE_SIGNED_METADATA=true`, cuando el único
+certificado de acceso del tenant —o el que EUDIPLO acabe eligiendo— sea uno
+emitido bajo `wrpac-ca` y publicado en `wrpac-lab`.
 
 ### 4.2 Por qué sólo el flavor `dev`
 
