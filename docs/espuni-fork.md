@@ -346,15 +346,20 @@ La variante `dev` de upstream llama a `requireSignedMetadata()` con política
 «emisor no verificado» y **bloquea la emisión antes de empezar**: *«Issuance
 blocked — the provider could not be verified by your wallet»*.
 
-Mientras el emisor no los firme se **prefieren** (`preferSignedMetadata()`): si
-algún día llegan, se validan; si no llegan, la confianza en el emisor sigue
-saliendo de lo que sí hay — la cadena del PID contra `pid-lab`, que la wallet
-comprueba al recibir la credencial, y el registration certificate que el emisor
-publica en `issuer_info`.
+**Con qué certificado se firman.** Con el **access certificate** del emisor, no
+con su Document Signer: `wallet-core` valida esa firma con
+`EtsiCertificateChainTrust` pasando el contexto
+`VerificationContext.WalletRelyingPartyAccessCertificate`, y la librería ETSI
+resuelve ese contexto contra el caso de uso **WRPAC**, es decir la lista
+`wrpac-lab`. `pid-lab` cubre otra cosa: el firmante de la credencial.
 
-Se vuelve a exigir con `-PLAB_REQUIRE_SIGNED_METADATA=true`, que es lo que hay
-que hacer el día que EUDIPLO los firme con un certificado que encadene a
-`pid-lab`.
+Mientras el emisor no los firme se **prefieren** (`preferSignedMetadata()`): si
+algún día llegan, se validan; si no llegan, la confianza en el emisor sale del
+registration certificate que publica en `issuer_info` y de la cadena del PID,
+que la wallet comprueba al recibir la credencial.
+
+Se vuelve a exigir con `-PLAB_REQUIRE_SIGNED_METADATA=true`, el día que EUDIPLO
+firme sus metadatos con un certificado que encadene a `wrpac-lab`.
 
 ### 4.2 Por qué sólo el flavor `dev`
 

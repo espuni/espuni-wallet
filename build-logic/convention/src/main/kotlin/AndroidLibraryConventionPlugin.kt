@@ -96,10 +96,18 @@ class AndroidLibraryConventionPlugin : Plugin<Project> {
             // referencia a `signed_metadata` en su backend. Con
             // requireSignedMetadata(), wallet-core devuelve
             // MissingSignedMetadata, la app lo traduce a "emisor no verificado"
-            // y bloquea la emision antes de empezar. Mientras el emisor no los
-            // firme, se PREFIEREN: si algun dia llegan, se validan; si no
-            // llegan, la confianza en el emisor sigue saliendo de la cadena del
-            // PID contra pid-lab y del registration certificate.
+            // y bloquea la emision antes de empezar.
+            //
+            // Cuando los firme, tiene que hacerlo con su ACCESS CERTIFICATE:
+            // wallet-core valida esa firma con EtsiCertificateChainTrust en el
+            // contexto WalletRelyingPartyAccessCertificate, que la libreria
+            // ETSI resuelve contra la lista WRPAC (wrpac-lab). No contra
+            // pid-lab, que es la que cubre al Document Signer de la credencial.
+            //
+            // Hasta entonces se PREFIEREN: si llegan, se validan; si no, la
+            // confianza en el emisor sale del registration certificate que
+            // publica y de la cadena del PID, que la wallet comprueba al
+            // recibir la credencial.
             val labRequireSignedMetadata =
                 lab("LAB_REQUIRE_SIGNED_METADATA", "false").toBoolean()
 
