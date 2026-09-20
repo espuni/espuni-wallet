@@ -69,6 +69,31 @@ defecto, el laboratorio de staging y `arm64-v8a`. Antes de subir el artefacto
 imprime los cinco valores tal como quedaron compilados, que es la única forma
 de saber a dónde apunta un APK sin instalarlo.
 
+### La clave con la que se firma, y por qué importa
+
+Un APK de debug lo firma AGP con `~/.android/debug.keystore`, que **genera si no
+existe**. En un runner de CI no existe nunca, así que cada ejecución firma con
+una clave distinta y el APK que sale no es una actualización del anterior:
+Android lo rechaza al instalarlo encima, con un mensaje que según el
+instalador es «paquete inválido» o «app no instalada». Comprobado sobre dos
+builds nuestros: certificados `0c042db4…` y `57df21d9…`, los dos
+`CN=Android Debug`, emitidos con minutos de diferencia.
+
+El workflow lo resuelve con el secreto `ANDROID_DEBUG_KEYSTORE_B64` (el
+keystore en base64). Si está, firma siempre igual; si no, avisa en el resumen
+de la ejecución y hay que **desinstalar antes** de instalar. En los dos casos
+imprime la huella SHA-256 del firmante, que es lo que hay que comparar cuando
+una instalación falla.
+
+Para crear el secreto una vez:
+
+```bash
+keytool -genkeypair -v -keystore debug.keystore -storepass android \
+  -keypass android -alias androiddebugkey -keyalg RSA -keysize 2048 \
+  -validity 10950 -dname "CN=Android Debug,O=Android,C=US"
+base64 -w0 debug.keystore   # → secreto ANDROID_DEBUG_KEYSTORE_B64
+```
+
 ### Cota de memoria obligatoria en WSL
 
 **Sin esto la VM de WSL se cae, no el build.** El `gradle.properties` del

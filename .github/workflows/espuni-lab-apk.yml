@@ -38,6 +38,24 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
+      # Sin esto, cada ejecución genera su propio debug keystore y firma con
+      # una clave distinta. El APK resultante no es una actualización del
+      # anterior: Android lo rechaza al instalar encima ("paquete inválido",
+      # "app not installed"), y hay que desinstalar cada vez. Con el secreto,
+      # todas las compilaciones firman igual y el APK se instala encima.
+      - name: Clave de firma estable
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_DEBUG_KEYSTORE_B64 }}
+        run: |
+          mkdir -p ~/.android
+          if [ -n "$KEYSTORE_B64" ]; then
+            printf '%s' "$KEYSTORE_B64" | base64 -d > ~/.android/debug.keystore
+            echo "Firmando con el keystore del secreto ANDROID_DEBUG_KEYSTORE_B64."
+          else
+            echo "::warning::Sin ANDROID_DEBUG_KEYSTORE_B64: se firmará con una clave nueva."
+            echo "::warning::El APK NO se podrá instalar encima de uno anterior; hay que desinstalar primero."
+          fi
+
       - name: Build dev debug APK
         env:
           PUBLISHER: ${{ inputs.publisher || 'https://trust-lab-publisher-staging.up.railway.app' }}
@@ -54,8 +72,13 @@ jobs:
           find app/build -name "*.apk" -path "*dev*debug*" -exec cp {} apk/ \;
           ls -lh apk/
 
-      - name: A dónde apunta este APK
-        run: find . -name "BuildConfig.java" -path "*corelogic*" -exec grep -h "LAB_" {} \; | sort -u
+      - name: A dónde apunta este APK, y con qué clave va firmado
+        run: |
+          find . -name "BuildConfig.java" -path "*corelogic*" -exec grep -h "LAB_" {} \; | sort -u
+          # La huella del firmante: si cambia entre dos APK, el segundo no se
+          # instala encima del primero.
+          APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | tail -1)
+          "$APKSIGNER" verify --print-certs apk/*.apk | grep -E "SHA-256 digest|Verified using"
 
       - uses: actions/upload-artifact@v4
         with:
