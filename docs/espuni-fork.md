@@ -60,6 +60,15 @@ cuatro ABIs. Un teléfono real sólo usa una. Pidiendo sólo `arm64-v8a` baja a
 > cualquier `assemble` posterior sin esa propiedad lo sobrescribe con el
 > universal, así que conviene copiarlo fuera del árbol de build antes de usarlo.
 
+### APK desde CI, sin Android SDK local
+
+El workflow `espuni lab APK` (`.github/workflows/espuni-lab-apk.yml`) construye
+`devDebug` en GitHub Actions y deja el APK como artefacto. Se lanza a mano
+(*Run workflow*) y admite el publisher, el wallet provider y la ABI; por
+defecto, el laboratorio de staging y `arm64-v8a`. Antes de subir el artefacto
+imprime los cinco valores tal como quedaron compilados, que es la única forma
+de saber a dónde apunta un APK sin instalarlo.
+
 ### Cota de memoria obligatoria en WSL
 
 **Sin esto la VM de WSL se cae, no el build.** El `gradle.properties` del
@@ -261,10 +270,46 @@ a la infraestructura de referencia de `eudiw.dev`.
 Las cuatro se comprobaron antes de compilar: `200` + `content-type:
 application/jwt`.
 
+**Las URLs no están en el código**: salen de `BuildConfig`, con el laboratorio
+de staging por defecto y parámetros de compilación para cambiarlas. Así una
+wallet por entorno —o por tenant, que es a donde va esto— es el mismo código
+con otros parámetros:
+
+```bash
+./gradlew :app:assembleDevDebug \
+  -PLAB_PUBLISHER=https://<publisher del lab> \
+  -PLAB_WALLET_PROVIDER_HOST=https://<wallet provider>
+```
+
+| Parámetro | Por defecto |
+|---|---|
+| `LAB_PUBLISHER` | `https://trust-lab-publisher-staging.up.railway.app` |
+| `LAB_PID_TRUST_LIST` · `LAB_WRPAC_TRUST_LIST` · `LAB_WRPRC_TRUST_LIST` · `LAB_PUBEAA_TRUST_LIST` | `$LAB_PUBLISHER/lote/<lista>.jwt` |
+| `LAB_WALLET_PROVIDER_HOST` | `https://wallet-provider-staging.up.railway.app` |
+
+> **Por qué el publisher de staging y no `trust-lab.espuni.com`.** Ese dominio
+> no resuelve: no tiene registro DNS. Las listas de staging se sirven en el
+> dominio de Railway del publisher, y desde el 19-09-2026 los documentos de
+> staging declaran esa URL también dentro de lo firmado (el `sub` de cada status
+> list y el puntero de cada lista a sí misma). El día que exista producción con
+> su dominio, se compila con `-PLAB_PUBLISHER=https://trust-lab.espuni.com`.
+
 **`wallet-lab` no está cableada en ningún slot**, aunque el laboratorio la
 publique y responda: una wallet no valida a su propio proveedor. Esa lista la
 consume el **emisor** (EUDIPLO, por `walletProviderTrustLists`) para comprobar la
 Wallet Instance Attestation que la wallet presenta.
+
+### 4.1-bis El wallet provider
+
+`walletProviderHost` también sale de `BuildConfig`
+(`LAB_WALLET_PROVIDER_HOST`). Es quien firma la Wallet Instance Attestation que
+la wallet presenta al pedir una credencial, con una clave publicada en
+`wallet-lab`: sin apuntarlo al del laboratorio, la WIA la firmaría el wallet
+provider de `eudiw.dev` y el emisor no podría reconocerla.
+
+En staging es el servicio `wallet-provider` del proyecto trust-lab, que firma
+con el `wia-signer` del laboratorio y pide a la consola la posición de status
+list de cada WIA.
 
 ### 4.2 Por qué sólo el flavor `dev`
 

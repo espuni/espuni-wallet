@@ -72,6 +72,27 @@ class AndroidLibraryConventionPlugin : Plugin<Project> {
             val rqesDocRetrievalScheme = "eudi-rqes"
             val rqesDocRetrievalHost = "*"
 
+            // espuni trust lab. Where this build points: the four trust lists the
+            // wallet consumes and the wallet provider that signs its WIA. They
+            // travel through BuildConfig so that pointing a build at another
+            // environment — or at another tenant's lab — is a build parameter
+            // (`-PLAB_PUBLISHER=...`), not an edit. Defaults: the staging lab.
+            fun lab(key: String, default: String): String =
+                (findProperty(key) as? String)?.takeIf { it.isNotBlank() } ?: default
+
+            val labPublisher = lab(
+                "LAB_PUBLISHER",
+                "https://trust-lab-publisher-staging.up.railway.app"
+            )
+            val labPidTrustList = lab("LAB_PID_TRUST_LIST", "$labPublisher/lote/pid-lab.jwt")
+            val labWrpacTrustList = lab("LAB_WRPAC_TRUST_LIST", "$labPublisher/lote/wrpac-lab.jwt")
+            val labWrprcTrustList = lab("LAB_WRPRC_TRUST_LIST", "$labPublisher/lote/wrprc-lab.jwt")
+            val labPubEaaTrustList = lab("LAB_PUBEAA_TRUST_LIST", "$labPublisher/lote/pubeaa-lab.jwt")
+            val labWalletProviderHost = lab(
+                "LAB_WALLET_PROVIDER_HOST",
+                "https://wallet-provider-staging.up.railway.app"
+            )
+
             with(pluginManager) {
                 apply("com.android.library")
                 apply("project.android.library.kover")
@@ -89,6 +110,11 @@ class AndroidLibraryConventionPlugin : Plugin<Project> {
                     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
                     addConfigField("DEEPLINK", "$walletScheme://")
+                    addConfigField("LAB_PID_TRUST_LIST", labPidTrustList)
+                    addConfigField("LAB_WRPAC_TRUST_LIST", labWrpacTrustList)
+                    addConfigField("LAB_WRPRC_TRUST_LIST", labWrprcTrustList)
+                    addConfigField("LAB_PUBEAA_TRUST_LIST", labPubEaaTrustList)
+                    addConfigField("LAB_WALLET_PROVIDER_HOST", labWalletProviderHost)
                     addConfigField("EUDI_OPENID4VP_SCHEME", eudiOpenId4VpScheme)
                     addConfigField("MDOC_OPENID4VP_SCHEME", mdocOpenId4VpScheme)
                     addConfigField("OPENID4VP_SCHEME", openId4VpScheme)
