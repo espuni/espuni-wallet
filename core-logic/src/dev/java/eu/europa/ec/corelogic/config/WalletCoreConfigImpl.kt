@@ -154,7 +154,13 @@ internal class WalletCoreConfigImpl(
 
                     configureIssuerTrust {
                         policy { default(TrustPolicy.Action.ENFORCE) }
-                        requireSignedMetadata()
+                        // Ver AndroidLibraryConventionPlugin: exigirlos bloquea
+                        // la emision contra un EUDIPLO que no los firma.
+                        if (BuildConfig.LAB_REQUIRE_SIGNED_METADATA) {
+                            requireSignedMetadata()
+                        } else {
+                            preferSignedMetadata()
+                        }
                         configureIssuerRegistrationPolicy(
                             if (isRegistrationCheckEnabled) {
                                 IssuerRegistrationPolicy.Enabled

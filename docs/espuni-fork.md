@@ -336,6 +336,26 @@ En staging es el servicio `wallet-provider` del proyecto trust-lab, que firma
 con el `wia-signer` del laboratorio y pide a la consola la posición de status
 list de cada WIA.
 
+### 4.1-ter Metadatos firmados del emisor: preferidos, no exigidos
+
+La variante `dev` de upstream llama a `requireSignedMetadata()` con política
+`ENFORCE`. **EUDIPLO no firma sus metadatos**: no hay una sola referencia a
+`signed_metadata` en su backend (comprobado en el submódulo, v7.2.0, y en
+`upstream/main` v8.0.1). Con el requisito activo, `wallet-core` devuelve
+`CredentialIssuerMetadataError.MissingSignedMetadata`, la app lo traduce a
+«emisor no verificado» y **bloquea la emisión antes de empezar**: *«Issuance
+blocked — the provider could not be verified by your wallet»*.
+
+Mientras el emisor no los firme se **prefieren** (`preferSignedMetadata()`): si
+algún día llegan, se validan; si no llegan, la confianza en el emisor sigue
+saliendo de lo que sí hay — la cadena del PID contra `pid-lab`, que la wallet
+comprueba al recibir la credencial, y el registration certificate que el emisor
+publica en `issuer_info`.
+
+Se vuelve a exigir con `-PLAB_REQUIRE_SIGNED_METADATA=true`, que es lo que hay
+que hacer el día que EUDIPLO los firme con un certificado que encadene a
+`pid-lab`.
+
 ### 4.2 Por qué sólo el flavor `dev`
 
 Los dos flavors traían un bloque `configureEtsiTrust` **idéntico byte a byte** y

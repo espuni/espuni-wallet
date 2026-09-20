@@ -92,6 +92,16 @@ class AndroidLibraryConventionPlugin : Plugin<Project> {
                 "LAB_WALLET_PROVIDER_HOST",
                 "https://wallet-provider-staging.up.railway.app"
             )
+            // EUDIPLO no firma sus metadatos de emisor: no hay una sola
+            // referencia a `signed_metadata` en su backend. Con
+            // requireSignedMetadata(), wallet-core devuelve
+            // MissingSignedMetadata, la app lo traduce a "emisor no verificado"
+            // y bloquea la emision antes de empezar. Mientras el emisor no los
+            // firme, se PREFIEREN: si algun dia llegan, se validan; si no
+            // llegan, la confianza en el emisor sigue saliendo de la cadena del
+            // PID contra pid-lab y del registration certificate.
+            val labRequireSignedMetadata =
+                lab("LAB_REQUIRE_SIGNED_METADATA", "false").toBoolean()
 
             with(pluginManager) {
                 apply("com.android.library")
@@ -115,6 +125,7 @@ class AndroidLibraryConventionPlugin : Plugin<Project> {
                     addConfigField("LAB_WRPRC_TRUST_LIST", labWrprcTrustList)
                     addConfigField("LAB_PUBEAA_TRUST_LIST", labPubEaaTrustList)
                     addConfigField("LAB_WALLET_PROVIDER_HOST", labWalletProviderHost)
+                    addConfigField("LAB_REQUIRE_SIGNED_METADATA", labRequireSignedMetadata)
                     addConfigField("EUDI_OPENID4VP_SCHEME", eudiOpenId4VpScheme)
                     addConfigField("MDOC_OPENID4VP_SCHEME", mdocOpenId4VpScheme)
                     addConfigField("OPENID4VP_SCHEME", openId4VpScheme)
