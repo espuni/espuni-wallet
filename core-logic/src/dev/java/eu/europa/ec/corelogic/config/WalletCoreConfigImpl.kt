@@ -99,11 +99,15 @@ internal class WalletCoreConfigImpl(
                         // issuer, to check the Wallet Instance Attestation the wallet
                         // presents, so it has no slot here.
                         loteLocations(
+                            // The four URLs come from BuildConfig, not from here:
+                            // one build per environment or per tenant is the same
+                            // code with other build parameters. See
+                            // AndroidLibraryConventionPlugin and docs/espuni-fork.md.
                             SupportedLists(
-                                pidProviders = Uri("https://trust-lab.espuni.com/lote/pid-lab.jwt"),
-                                wrpacProviders = Uri("https://trust-lab.espuni.com/lote/wrpac-lab.jwt"),
-                                wrprcProviders = Uri("https://trust-lab.espuni.com/lote/wrprc-lab.jwt"),
-                                pubEaaProviders = Uri("https://trust-lab.espuni.com/lote/pubeaa-lab.jwt"),
+                                pidProviders = Uri(BuildConfig.LAB_PID_TRUST_LIST),
+                                wrpacProviders = Uri(BuildConfig.LAB_WRPAC_TRUST_LIST),
+                                wrprcProviders = Uri(BuildConfig.LAB_WRPRC_TRUST_LIST),
+                                pubEaaProviders = Uri(BuildConfig.LAB_PUBEAA_TRUST_LIST),
                             )
                         )
 
@@ -255,6 +259,9 @@ internal class WalletCoreConfigImpl(
             )
         )
 
+    // The lab's wallet provider: it signs the Wallet Instance Attestation with a
+    // key published in `wallet-lab`, so the issuer can check who attested this
+    // wallet. Same BuildConfig treatment as the four lists.
     override val walletProviderHost: String
-        get() = "https://dev.wallet-provider.eudiw.dev"
+        get() = BuildConfig.LAB_WALLET_PROVIDER_HOST
 }
