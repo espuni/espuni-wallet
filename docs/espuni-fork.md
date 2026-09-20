@@ -368,10 +368,12 @@ y el tenant tiene más de uno: el que EUDIPLO se autogeneró al arrancar
 laboratorio desde un WRPAC. En staging coge el autogenerado, que no encadena
 con `wrpac-lab`, así que la firma no la avala nadie.
 
-De ahí que de momento se **prefieran** (`preferSignedMetadata()`): la
-confianza en el emisor sale del registration certificate que publica en
-`issuer_info` y de la cadena del PID, que la wallet comprueba al recibir la
-credencial.
+De ahí que de momento se **prefieran** (`preferSignedMetadata()`). Ojo con lo
+que eso significa: «preferir» sólo tolera la **ausencia**. Si el emisor
+responde `application/jwt` —y EUDIPLO responde—, `requestPreferringSigned`
+llama igualmente a `parseAndVerifySignedMetadata` y **propaga el fallo**; no
+hay vuelta atrás a los metadatos sin firmar. La diferencia con `require` es
+sólo qué pasa cuando el emisor no los firma en absoluto.
 
 Se vuelve a exigir con `-PLAB_REQUIRE_SIGNED_METADATA=true`, cuando el único
 certificado de acceso del tenant —o el que EUDIPLO acabe eligiendo— sea uno
