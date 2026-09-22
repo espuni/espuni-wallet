@@ -281,6 +281,12 @@ nuestras plantillas a las suyas. La traducción es total y mecánica;
 Apunta la configuración ETSI del flavor `dev` al laboratorio de espuni en vez de
 a la infraestructura de referencia de `eudiw.dev`.
 
+> Esta sección cuenta **qué se cambió aquí y con qué evidencia**. Si lo que
+> buscas es el procedimiento general —apuntar esta wallet a *otro* marco de
+> confianza, qué es obligatorio y qué se puede desactivar—, está separado en
+> [`marco-de-confianza-propio.md`](./marco-de-confianza-propio.md), que no
+> depende de espuni.
+
 ### 4.1 Las cuatro listas
 
 `core-logic/src/dev/.../WalletCoreConfigImpl.kt`, dentro de `configureEtsiTrust`:
